@@ -1,3 +1,4 @@
+
 # dwm - dynamic window manager
 # See LICENSE file for copyright and license details.
 
@@ -37,15 +38,11 @@ dist: clean
 	rm -rf dwm-${VERSION}
 
 install: all
-	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f dwm ${DESTDIR}${PREFIX}/bin
-	chmod 755 ${DESTDIR}${PREFIX}/bin/dwm
-	mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	sed "s/VERSION/${VERSION}/g" < dwm.1 > ${DESTDIR}${MANPREFIX}/man1/dwm.1
-	chmod 644 ${DESTDIR}${MANPREFIX}/man1/dwm.1
+	mkdir -p $(HOME)/bin
+	cp -f dwm $(HOME)/bin
+	chmod 755 $(HOME)/bin/dwm
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/dwm\
-		${DESTDIR}${MANPREFIX}/man1/dwm.1
+	rm -f ${DESTDIR}${PREFIX}/bin/dwm
 
 .PHONY: all options clean dist install uninstall
