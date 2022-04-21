@@ -112,7 +112,6 @@ struct Monitor {
 	Client *clients;
 	Client *sel;
 	Client *stack;
-	Monitor *next;
 };
 
 typedef struct {
@@ -120,7 +119,6 @@ typedef struct {
 	const char *instance;
 	const char *title;
 	unsigned int tags;
-	int monitor;
 } Rule;
 
 /* function declarations */
@@ -141,11 +139,9 @@ static Monitor *createmon(void);
 static void destroynotify(XEvent *e);
 static void detach(Client *c);
 static void detachstack(Client *c);
-static Monitor *dirtomon(int dir);
 static void enternotify(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
-static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
@@ -183,7 +179,6 @@ static void unfocus(Client *c, int setfocus);
 static void unmanage(Client *c, int destroyed);
 static void unmapnotify(XEvent *e);
 static void updateclientlist(void);
-static int updategeom(void);
 static void updatenumlockmask(void);
 static void updatesizehints(Client *c);
 static void updatewindowtype(Client *c);
@@ -238,7 +233,6 @@ applyrules(Client *c)
 	const char *class, *instance;
 	unsigned int i;
 	const Rule *r;
-	Monitor *m;
 	XClassHint ch = { NULL, NULL };
 
 	/* rule matching */
@@ -254,9 +248,7 @@ applyrules(Client *c)
 		&& (!r->instance || strstr(instance, r->instance)))
 		{
 			c->tags |= r->tags;
-			for (m = mons; m && m->num != r->monitor; m = m->next);
-			if (m)
-				c->mon = m;
+			c->mon = mons;
 		}
 	}
 	if (ch.res_class)
@@ -335,8 +327,8 @@ arrange(Monitor *m)
 {
 	if (m)
 		showhide(m->stack);
-	else for (m = mons; m; m = m->next)
-		showhide(m->stack);
+	else
+		showhide(mons->stack);
 	if (m) {
 		restack(m);
 	}
@@ -399,13 +391,12 @@ void
 cleanup(void)
 {
 	Arg a = {.ui = ~0};
-	Monitor *m;
 	size_t i;
 
 	view(&a);
-	for (m = mons; m; m = m->next)
-		while (m->stack)
-			unmanage(m->stack, 0);
+
+	while (mons->stack)
+		unmanage(mons->stack, 0);
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
 	while (mons)
 		cleanupmon(mons);
@@ -424,14 +415,6 @@ cleanup(void)
 void
 cleanupmon(Monitor *mon)
 {
-	Monitor *m;
-
-	if (mon == mons)
-		mons = mons->next;
-	else {
-		for (m = mons; m && m->next != mon; m = m->next);
-		m->next = mon->next;
-	}
 	free(mon);
 }
 
@@ -478,28 +461,8 @@ configure(Client *c)
 void
 configurenotify(XEvent *e)
 {
-	Monitor *m;
-	Client *c;
-	XConfigureEvent *ev = &e->xconfigure;
-	int dirty;
-
-	/* TODO: updategeom handling sucks, needs to be simplified */
-	if (ev->window == root) {
-		dirty = (sw != ev->width || sh != ev->height);
-		sw = ev->width;
-		sh = ev->height;
-		if (updategeom() || dirty) {
-			
-			for (m = mons; m; m = m->next) {
-				for (c = m->clients; c; c = c->next)
-					if (c->isfullscreen)
-						resizeclient(c, m->mx, m->my, m->mw, m->mh);
-				
-			}
-			focus(NULL);
-			arrange(NULL);
-		}
-	}
+	focus(NULL);
+	arrange(NULL);
 }
 
 void
@@ -559,6 +522,8 @@ createmon(void)
 	Monitor *m;
 
 	m = ecalloc(1, sizeof(Monitor));
+	m->mw = sw;
+	m->mh = sh;
 	m->tagset[0] = m->tagset[1] = 1;
 	return m;
 }
@@ -594,21 +559,6 @@ detachstack(Client *c)
 		for (t = c->mon->stack; t && !ISVISIBLE(t); t = t->snext);
 		c->mon->sel = t;
 	}
-}
-
-Monitor *
-dirtomon(int dir)
-{
-	Monitor *m = NULL;
-
-	if (dir > 0) {
-		if (!(m = selmon->next))
-			m = mons;
-	} else if (selmon == mons)
-		for (m = mons; m->next; m = m->next);
-	else
-		for (m = mons; m->next != selmon; m = m->next);
-	return m;
 }
 
 void
@@ -662,20 +612,6 @@ focusin(XEvent *e)
 
 	if (selmon->sel && ev->window != selmon->sel->win)
 		setfocus(selmon->sel);
-}
-
-void
-focusmon(const Arg *arg)
-{
-	Monitor *m;
-
-	if (!mons->next)
-		return;
-	if ((m = dirtomon(arg->i)) == selmon)
-		return;
-	unfocus(selmon->sel, 0);
-	selmon = m;
-	focus(NULL);
 }
 
 void
@@ -843,11 +779,11 @@ manage(Window w, XWindowAttributes *wa)
 		applyrules(c);
 	}
 
-	if (c->x + WIDTH(c) > c->mon->mx + c->mon->mw)
+	if (c->x + WIDTH(c) > c->mon->mw)
 		c->x = c->mon->mx + c->mon->mw - WIDTH(c);
-	if (c->y + HEIGHT(c) > c->mon->my + c->mon->mh)
+	if (c->y + HEIGHT(c) > c->mon->mh)
 		c->y = c->mon->my + c->mon->mh - HEIGHT(c);
-	c->x = MAX(c->x, c->mon->mx);
+	c->x = MAX(c->x, 0);
 		
 	c->bw = borderpx;
 
@@ -1011,11 +947,11 @@ recttomon(int x, int y, int w, int h)
 	Monitor *m, *r = selmon;
 	int a, area = 0;
 
-	for (m = mons; m; m = m->next)
-		if ((a = INTERSECT(x, y, w, h, m)) > area) {
-			area = a;
-			r = m;
-		}
+	m = mons;
+	if ((a = INTERSECT(x, y, w, h, m)) > area) {
+		area = a;
+		r = m;
+	}
 	return r;
 }
 
@@ -1247,7 +1183,7 @@ setup(void)
 	sh = DisplayHeight(dpy, screen);
 	root = RootWindow(dpy, screen);
 	drw = drw_create(dpy, screen, root, sw, sh);
-	updategeom();
+	mons = selmon = createmon();
 	/* init atoms */
 	utf8string = XInternAtom(dpy, "UTF8_STRING", False);
 	wmatom[WMProtocols] = XInternAtom(dpy, "WM_PROTOCOLS", False);
@@ -1419,31 +1355,11 @@ updateclientlist()
 	Monitor *m;
 
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
-	for (m = mons; m; m = m->next)
-		for (c = m->clients; c; c = c->next)
-			XChangeProperty(dpy, root, netatom[NetClientList],
+	m = mons;
+	for (c = m->clients; c; c = c->next)
+		XChangeProperty(dpy, root, netatom[NetClientList],
 				XA_WINDOW, 32, PropModeAppend,
 				(unsigned char *) &(c->win), 1);
-}
-
-int
-updategeom(void)
-{
-	int dirty = 0;
-
-	if (!mons)
-		mons = createmon();
-	if (mons->mw != sw || mons->mh != sh) {
-		dirty = 1;
-		mons->mw = sw;
-		mons->mh = sh;
-	}
-
-	if (dirty) {
-		selmon = mons;
-		selmon = wintomon(root);
-	}
-	return dirty;
 }
 
 void
@@ -1552,10 +1468,10 @@ wintoclient(Window w)
 	Client *c;
 	Monitor *m;
 
-	for (m = mons; m; m = m->next)
-		for (c = m->clients; c; c = c->next)
-			if (c->win == w)
-				return c;
+	m = mons;
+	for (c = m->clients; c; c = c->next)
+		if (c->win == w)
+			return c;
 	return NULL;
 }
 

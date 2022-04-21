@@ -27,14 +27,14 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class      instance    title       tags mask        monitor */
-	{ NULL,		NULL,	"Terminal",	2,	    	-1 },
-	{ NULL,		NULL,	"Emacs",	4,	    	-1 },
-	{ "Firefox",	NULL,	NULL,		8,	    	-1 },
-	{ "Tor Browser",NULL,	NULL,		8,	    	-1 },
-	{ "Gimp",	NULL,	NULL,		1,	    	-1 },
-	{ "Shotcut",	NULL,	NULL,		1,	    	-1 },
-	{ "Kicad",	NULL,	NULL,		1,	    	-1 },
-	{ "Audacity",	NULL,	NULL,		1,	    	-1 },
+	{ NULL,		NULL,	"Terminal",	2,	},
+	{ NULL,		NULL,	"Emacs",	4,	},
+	{ "Firefox",	NULL,	NULL,		8,	},
+	{ "Tor Browser",NULL,	NULL,		8,	},
+	{ "Gimp",	NULL,	NULL,		1,	},
+	{ "Shotcut",	NULL,	NULL,		1,	},
+	{ "Kicad",	NULL,	NULL,		1,	},
+	{ "Audacity",	NULL,	NULL,		1,	},
 };
 
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
@@ -63,8 +63,6 @@ static Key keys[] = {
   /* modifier(s)	key		function	argument */
   { MODKEY,	 	XK_n,		spawn,          {.v = termcmd } },
   { Mod1Mask,		XK_Tab,		view,		{0} },
-  { MODKEY,		XK_comma,	focusmon,	{.i = -1 } },
-  { MODKEY,		XK_period,	focusmon,	{.i = +1 } },
   { MODKEY, 		XK_semicolon,	focusstack,	{.i = +1 } },
   { MODKEY,	 	XK_c,		killclient,     {0} },
   { MODKEY, 		XK_h,		view,           {.ui = 1 << 0} },
