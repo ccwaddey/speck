@@ -128,6 +128,8 @@ static void killclient(const Arg *arg);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
+static void maximize(const Arg *arg);
+static void minimize(const Arg *arg);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
 static void propertynotify(XEvent *e);
@@ -794,6 +796,26 @@ maprequest(XEvent *e)
 		return;
 	if (!wintoclient(ev->window))
 		manage(ev->window, &wa);
+}
+
+void
+maximize(const Arg *arg)
+{
+	Client *c = themon->sel;
+
+	if (!c || c->isfullscreen)
+		return;
+	resize(c, 0, 0, themon->mw - 2*c->bw, themon->mh - 2*c->bw, 0);
+}	
+
+void
+minimize(const Arg *arg)
+{
+	Client *c = themon->sel;
+
+	if (!c || c->isfullscreen)
+		return;
+	resize(c, c->oldx, c->oldy, c->oldw, c->oldh, 0);
 }
 
 void
