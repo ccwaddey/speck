@@ -13,7 +13,7 @@ static const char *colors[][1]      = {
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", };
-static unsigned int inittag = 2, initalttag = 4;
+static unsigned int inittag = 1, initalttag = 2;
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -22,21 +22,22 @@ static const Rule rules[] = {
 	 */
 	/* class      instance    title       tag-mask    */
 	{ "st",		NULL,	NULL,		2,	},
-	{ "Emacs",	NULL,	NULL,		4,	},
+	{ "Emacs",	NULL,	NULL,		2,	},
 	{ "Firefox",	NULL,	NULL,		4,	},
 	{ "Tor Browser",NULL,	NULL,		4,	},
 	{ "Gimp",	NULL,	NULL,		8,	},
 	{ "Shotcut",	NULL,	NULL,		8,	},
 	{ "Kicad",	NULL,	NULL,		8,	},
 	{ "Audacity",	NULL,	NULL,		8,	},
-	{ "st",		NULL,	"grdc",		1,	},
+	{ NULL,		"grdc",	NULL,		1,	},
 };
 
 /* key definitions */
 #define MODKEY (ControlMask|ShiftMask)
+#define HOMEBIN "/home/me/bin/"
 
 /* commands */
-static const char *termcmd[] = { "env", "LC_CTYPE=en_US.UTF-8", "/home/me/bin/st",
+static const char *termcmd[] = { "env", "LC_CTYPE=en_US.UTF-8", HOMEBIN"st",
 	"-F", "-n", "st", "-T", "Terminal", "-e", "tmux",
 	NULL };
 static const char *emacscmd[] = { "emacs", NULL };
