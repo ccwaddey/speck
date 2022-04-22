@@ -8,9 +8,6 @@
 #include "drw.h"
 #include "util.h"
 
-#define UTF_INVALID 0xFFFD
-#define UTF_SIZ     4
-
 Drw *
 drw_create(Display *dpy, int screen, Window root, unsigned int w, unsigned int h)
 {
