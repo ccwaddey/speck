@@ -23,7 +23,7 @@ static const Rule rules[] = {
 	/* class      instance    title       tag-mask    */
 	{ "st",		NULL,	NULL,		2,	},
 	{ "Emacs",	NULL,	NULL,		2,	},
-	{ "Firefox",	NULL,	NULL,		4,	},
+	{ NULL,	"Navigator",	NULL,		4,	},
 	{ "Tor Browser",NULL,	NULL,		4,	},
 	{ "Gimp",	NULL,	NULL,		8,	},
 	{ "Shotcut",	NULL,	NULL,		8,	},
