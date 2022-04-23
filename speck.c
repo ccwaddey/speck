@@ -64,11 +64,11 @@ struct Client {
 	int x, y, w, h;
 	int oldx, oldy, oldw, oldh;
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
-	int bw, oldbw;
+	int bw, oldbw; /* border width */
 	unsigned int tags;
 	int isfixed, isurgent, neverfocus, isfullscreen;
 	Client *next;
-	Client *snext;
+	Client *snext; /* stack next */
 	Monitor *mon;
 	Window win;
 };
@@ -81,7 +81,6 @@ typedef struct {
 } Key;
 
 struct Monitor {
-	int num;
 	int mw, mh;   /* screen size */
 	unsigned int seltags;
 	unsigned int tagset[2]; /* There are two for toggling like Alt-Tab */
