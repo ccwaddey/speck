@@ -4,7 +4,7 @@
 
 include config.mk
 
-SRC = drw.c speck.c util.c
+SRC = speck.c util.c
 OBJ = ${SRC:.c=.o}
 
 all: options speck
@@ -20,14 +20,11 @@ options:
 
 ${OBJ}: config.h config.mk
 
-config.h:
-	cp config.def.h $@
-
 speck: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
-	rm -f speck ${OBJ}
+	rm -f ${OBJ}
 
 install: all
 	mkdir -p $(HOME)/bin

@@ -1,19 +1,14 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx  = 4;        /* border pixel of windows */
-static const unsigned int snap      = 32;       /* snap pixel */
-static const char col_gray2[]       = "#676767";
-static const char col_orange[]      = "#ce5c00";
-static const char *colors[][1]      = {
-	/* 		border   */
-	[SchemeNorm] = { col_gray2 },
-	[SchemeSel]  = { col_orange },
-};
+static const unsigned int borderpx = 4;        /* border pixel of windows */
+static const unsigned int snap     = 32;       /* snap pixel */
+static const char col_unfocus[]    = "#676767";
+static const char col_focus[]      = "#ce5c00";
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", };
-static unsigned int inittag = 1, initalttag = 2;
+static const unsigned int inittag = 1, initalttag = 2;
 
 static const Rule rules[] = {
 	/* xprop(1):
