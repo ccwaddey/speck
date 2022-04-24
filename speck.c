@@ -110,7 +110,6 @@ static Monitor *createmon(void);
 static void destroynotify(XEvent *e);
 static void detach(Client *c);
 static void detachstack(Client *c);
-static void enternotify(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
 static void focusstack(const Arg *arg);
@@ -170,7 +169,6 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[ConfigureRequest] = configurerequest,
 	[ConfigureNotify] = configurenotify,
 	[DestroyNotify] = destroynotify,
-	[EnterNotify] = enternotify,
 	[FocusIn] = focusin,
 	[KeyPress] = keypress,
 	[MappingNotify] = mappingnotify,
@@ -494,20 +492,6 @@ detachstack(Client *c) {
 }
 
 void
-enternotify(XEvent *e) {
-	Client *c;
-	XCrossingEvent *ev = &e->xcrossing;
-
-	if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) &&
-	    ev->window != root)
-		return;
-	c = wintoclient(ev->window);
-	if (!c || c == themon->sel)
-		return;
-	focus(c);
-}
-
-void
 focus(Client *c) {
 	if (!c || !ISVISIBLE(c))
 		for (c = themon->stack; c && !ISVISIBLE(c); c = c->snext);
@@ -706,8 +690,8 @@ manage(Window w, XWindowAttributes *wa) {
 	configure(c); /* propagates border_width, if size doesn't change */
 	updatewindowtype(c);
 	updatewmhints(c);
-	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask
-	    |PropertyChangeMask|StructureNotifyMask);
+	XSelectInput(dpy, w, FocusChangeMask|PropertyChangeMask
+		     |StructureNotifyMask);
 	grabbuttons(c, 0);
 
 	XRaiseWindow(dpy, c->win);
@@ -786,11 +770,10 @@ movemouse(const Arg *arg) {
 	if (!getrootptr(&x, &y))
 		return;
 	do {
-		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask,
+		XMaskEvent(dpy, MOUSEMASK|SubstructureRedirectMask,
 			   &ev);
 		switch(ev.type) {
 		case ConfigureRequest:
-		case Expose:
 		case MapRequest:
 			handler[ev.type](&ev);
 			break;
@@ -884,11 +867,10 @@ resizemouse(const Arg *arg) {
 	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1,
 		     c->h + c->bw - 1);
 	do {
-		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask,
+		XMaskEvent(dpy, MOUSEMASK|SubstructureRedirectMask,
 			   &ev);
 		switch(ev.type) {
 		case ConfigureRequest:
-		case Expose:
 		case MapRequest:
 			handler[ev.type](&ev);
 			break;
@@ -908,19 +890,14 @@ resizemouse(const Arg *arg) {
 	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1,
 		     c->h + c->bw - 1);
 	XUngrabPointer(dpy, CurrentTime);
-	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
 
 void
 restack(Monitor *m) {
-	XEvent ev;
-
 	if (!m->sel)
 		return;
 	XRaiseWindow(dpy, m->sel->win);
-	
 	XSync(dpy, False);
-	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
 
 void
@@ -1077,7 +1054,7 @@ setup(void) {
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select events */
 	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask
-		|ButtonPressMask|EnterWindowMask|StructureNotifyMask;
+		|ButtonPressMask|StructureNotifyMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys();
