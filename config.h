@@ -5,6 +5,7 @@ static const unsigned int borderpx = 4;        /* border pixel of windows */
 static const unsigned int snap     = 32;       /* snap pixel */
 static const char col_unfocus[]    = "#676767";
 static const char col_focus[]      = "#ce5c00";
+static const int yreserve = 0, xreserve = 0;  /* screen space to reserve */
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", };

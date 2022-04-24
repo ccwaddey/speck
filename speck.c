@@ -9,19 +9,19 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <X11/cursorfont.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
-#include <X11/Xutil.h>
 #include <X11/Xft/Xft.h>
 
 #include "util.h"
 
 /* macros */
 #define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
-#define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
+#define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & \
+				 (ShiftMask|ControlMask|Mod1Mask|Mod2Mask \
+				  |Mod3Mask|Mod4Mask|Mod5Mask))
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->mw) - MAX((x),0)) \
                                * MAX(0, MIN((y)+(h),(m)->mh) - MAX((y),0)))
 #define ISVISIBLE(C)            ((C->tags & themon->tagset[themon->seltags]))
@@ -63,7 +63,7 @@ struct Client {
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
 	int bw, oldbw; /* border width */
 	unsigned int tags;
-	int isfixed, isurgent, neverfocus, isfullscreen;
+	int isfixed, neverfocus, isfullscreen;
 	Client *next;
 	Client *snext; /* stack next */
 	Window win;
@@ -140,7 +140,6 @@ static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
 static void setup(void);
-static void seturgent(Client *c, int urg);
 static void showhide(Client *c);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
@@ -194,8 +193,7 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 
 /* function implementations */
 void
-applyrules(Client *c)
-{
+applyrules(Client *c) {
 	const char *class, *instance;
 	unsigned int i;
 	const Rule *r;
@@ -218,12 +216,12 @@ applyrules(Client *c)
 		XFree(ch.res_class);
 	if (ch.res_name)
 		XFree(ch.res_name);
-	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : themon->tagset[themon->seltags];
+	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK :
+		themon->tagset[themon->seltags];
 }
 
 int
-applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
-{
+applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact) {
 	int baseismin;
 
 	/* set minimum possible */
@@ -285,8 +283,7 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 }
 
 void
-arrange(Monitor *m)
-{
+arrange(Monitor *m) {
 	showhide(themon->stack);
 	if (m) {
 		restack(m);
@@ -294,22 +291,19 @@ arrange(Monitor *m)
 }
 
 void
-attach(Client *c)
-{
+attach(Client *c) {
 	c->next = themon->clients;
 	themon->clients = c;
 }
 
 void
-attachstack(Client *c)
-{
+attachstack(Client *c) {
 	c->snext = themon->stack;
 	themon->stack = c;
 }
 
 void
-buttonpress(XEvent *e)
-{
+buttonpress(XEvent *e) {
 	unsigned int i, click;
 	Client *c;
 	XButtonPressedEvent *ev = &e->xbutton;
@@ -330,8 +324,7 @@ buttonpress(XEvent *e)
 }
 
 void
-checkotherwm(void)
-{
+checkotherwm(void) {
 	xerrorxlib = XSetErrorHandler(xerrorstart);
 	/* this causes an error if some other window manager is running */
 	XSelectInput(dpy, DefaultRootWindow(dpy), SubstructureRedirectMask);
@@ -341,8 +334,7 @@ checkotherwm(void)
 }
 
 void
-cleanup(void)
-{
+cleanup(void) {
 	Arg a = {.ui = ~0};
 
 	view(&a);
@@ -358,11 +350,9 @@ cleanup(void)
 }
 
 void
-clr_create(XftColor *dest, const char *clrname)
-{
+clr_create(XftColor *dest, const char *clrname) {
 	if (!dest || !clrname)
 		return;
-
 	if (!XftColorAllocName(dpy, DefaultVisual(dpy, screen),
 	                       DefaultColormap(dpy, screen),
 	                       clrname, dest))
@@ -370,29 +360,23 @@ clr_create(XftColor *dest, const char *clrname)
 }
 
 void
-clientmessage(XEvent *e)
-{
+clientmessage(XEvent *e) {
 	XClientMessageEvent *cme = &e->xclient;
 	Client *c = wintoclient(cme->window);
 
 	if (!c)
 		return;
-	if (cme->message_type == netatom[NetWMState]) {
+	if (cme->message_type == netatom[NetWMState]) 
 		if (cme->data.l[1] == netatom[NetWMFullscreen]
 		|| cme->data.l[2] == netatom[NetWMFullscreen])
 			setfullscreen(c,
 			    (cme->data.l[0] == 1 /* _NET_WM_STATE_ADD */
 			    || (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */
 			    && !c->isfullscreen)));
-	} else if (cme->message_type == netatom[NetActiveWindow]) {
-		if (c != themon->sel && !c->isurgent)
-			seturgent(c, 1);
-	}
 }
 
 void
-configure(Client *c)
-{
+configure(Client *c) {
 	XConfigureEvent ce;
 
 	ce.type = ConfigureNotify;
@@ -410,15 +394,13 @@ configure(Client *c)
 }
 
 void
-configurenotify(XEvent *e)
-{
+configurenotify(XEvent *e) {
 	focus(NULL);
 	arrange(NULL);
 }
 
 void
-configurerequest(XEvent *e)
-{
+configurerequest(XEvent *e) {
 	Client *c;
 	XConfigureRequestEvent *ev = &e->xconfigurerequest;
 	XWindowChanges wc;
@@ -453,7 +435,8 @@ configurerequest(XEvent *e)
 			    !(ev->value_mask & (CWWidth|CWHeight)))
 				configure(c);
 			if (ISVISIBLE(c))
-				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w,
+						  c->h);
 		}
 	} else {
 		wc.x = ev->x;
@@ -469,21 +452,19 @@ configurerequest(XEvent *e)
 }
 
 Monitor *
-createmon(void)
-{
+createmon(void) {
 	Monitor *m;
 
 	m = ecalloc(1, sizeof(Monitor));
-	m->mw = sw;
-	m->mh = sh;
+	m->mw = sw - xreserve;
+	m->mh = sh - yreserve;
 	m->tagset[0] = inittag;
 	m->tagset[1] = initalttag;
 	return m;
 }
 
 void
-destroynotify(XEvent *e)
-{
+destroynotify(XEvent *e) {
 	Client *c;
 	XDestroyWindowEvent *ev = &e->xdestroywindow;
 
@@ -492,8 +473,7 @@ destroynotify(XEvent *e)
 }
 
 void
-detach(Client *c)
-{
+detach(Client *c) {
 	Client **tc;
 
 	for (tc = &themon->clients; *tc && *tc != c; tc = &(*tc)->next);
@@ -501,8 +481,7 @@ detach(Client *c)
 }
 
 void
-detachstack(Client *c)
-{
+detachstack(Client *c) {
 	Client **tc, *t;
 
 	for (tc = &themon->stack; *tc && *tc != c; tc = &(*tc)->snext);
@@ -515,8 +494,7 @@ detachstack(Client *c)
 }
 
 void
-enternotify(XEvent *e)
-{
+enternotify(XEvent *e) {
 	Client *c;
 	XCrossingEvent *ev = &e->xcrossing;
 
@@ -530,15 +508,12 @@ enternotify(XEvent *e)
 }
 
 void
-focus(Client *c)
-{
+focus(Client *c) {
 	if (!c || !ISVISIBLE(c))
 		for (c = themon->stack; c && !ISVISIBLE(c); c = c->snext);
 	if (themon->sel && themon->sel != c)
 		unfocus(themon->sel, 0);
 	if (c) {
-		if (c->isurgent)
-			seturgent(c, 0);
 		detachstack(c);
 		attachstack(c);
 		grabbuttons(c, 1);
@@ -553,8 +528,7 @@ focus(Client *c)
 
 /* there are some broken focus acquiring clients needing extra handling */
 void
-focusin(XEvent *e)
-{
+focusin(XEvent *e) {
 	XFocusChangeEvent *ev = &e->xfocus;
 
 	if (themon->sel && ev->window != themon->sel->win)
@@ -562,8 +536,7 @@ focusin(XEvent *e)
 }
 
 void
-focusstack(const Arg *arg)
-{
+focusstack(const Arg *arg) {
 	Client *c = NULL, *i;
 
 	if (!themon->sel)
@@ -588,8 +561,7 @@ focusstack(const Arg *arg)
 }
 
 Atom
-getatomprop(Client *c, Atom prop)
-{
+getatomprop(Client *c, Atom prop) {
 	int di;
 	unsigned long dl;
 	unsigned char *p = NULL;
@@ -604,8 +576,7 @@ getatomprop(Client *c, Atom prop)
 }
 
 int
-getrootptr(int *x, int *y)
-{
+getrootptr(int *x, int *y) {
 	int di;
 	unsigned int dui;
 	Window dummy;
@@ -614,16 +585,15 @@ getrootptr(int *x, int *y)
 }
 
 long
-getstate(Window w)
-{
+getstate(Window w) {
 	int format;
 	long result = -1;
 	unsigned char *p = NULL;
 	unsigned long n, extra;
 	Atom real;
 
-	if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False, wmatom[WMState],
-		&real, &format, &n, &extra, (unsigned char **)&p) != Success)
+	if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False,
+	    wmatom[WMState], &real, &format, &n, &extra, &p) != Success)
 		return -1;
 	if (n != 0)
 		result = *p;
@@ -632,8 +602,7 @@ getstate(Window w)
 }
 
 void
-grabbuttons(Client *c, int focused)
-{
+grabbuttons(Client *c, int focused) {
 	updatenumlockmask();
 	{
 		unsigned int i, j;
@@ -655,8 +624,7 @@ grabbuttons(Client *c, int focused)
 }
 
 void
-grabkeys(void)
-{
+grabkeys(void) {
 	updatenumlockmask();
 	{
 		unsigned int i, j;
@@ -675,8 +643,7 @@ grabkeys(void)
 }
 
 void
-keypress(XEvent *e)
-{
+keypress(XEvent *e) {
 	unsigned int i;
 	KeySym keysym;
 	XKeyEvent *ev;
@@ -691,14 +658,12 @@ keypress(XEvent *e)
 }
 
 void
-killclient(const Arg *arg)
-{
+killclient(const Arg *arg) {
 	if (!themon->sel)
 		return;
 	if (!sendevent(themon->sel, wmatom[WMDelete])) {
 		XGrabServer(dpy);
 		XSetErrorHandler(xerrordummy);
-		XSetCloseDownMode(dpy, DestroyAll);
 		XKillClient(dpy, themon->sel->win);
 		XSync(dpy, False);
 		XSetErrorHandler(xerror);
@@ -707,8 +672,7 @@ killclient(const Arg *arg)
 }
 
 void
-manage(Window w, XWindowAttributes *wa)
-{
+manage(Window w, XWindowAttributes *wa) {
 	Client *c, *t = NULL;
 	Window trans = None;
 	XWindowChanges wc;
@@ -733,25 +697,27 @@ manage(Window w, XWindowAttributes *wa)
 	if (c->y + HEIGHT(c) > themon->mh)
 		c->y = themon->mh - HEIGHT(c);
 	c->x = MAX(c->x, 0);
-		
-	c->bw = borderpx;
+	c->y = MAX(c->y, 0);
 
+	c->bw = borderpx;
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
 	XSetWindowBorder(dpy, w, unfocusbordercolor.pixel);
 	configure(c); /* propagates border_width, if size doesn't change */
 	updatewindowtype(c);
 	updatewmhints(c);
-	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
+	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask
+	    |PropertyChangeMask|StructureNotifyMask);
 	grabbuttons(c, 0);
 
 	XRaiseWindow(dpy, c->win);
 
 	attach(c);
 	attachstack(c);
-	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
-		(unsigned char *) &(c->win), 1);
-	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
+	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32,
+	    PropModeAppend, (unsigned char *) &(c->win), 1);
+	/* some windows require this */
+	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h);
 	setclientstate(c, NormalState);
 	unfocus(themon->sel, 0);
 	themon->sel = c;
@@ -761,8 +727,7 @@ manage(Window w, XWindowAttributes *wa)
 }
 
 void
-mappingnotify(XEvent *e)
-{
+mappingnotify(XEvent *e) {
 	XMappingEvent *ev = &e->xmapping;
 
 	XRefreshKeyboardMapping(ev);
@@ -771,8 +736,7 @@ mappingnotify(XEvent *e)
 }
 
 void
-maprequest(XEvent *e)
-{
+maprequest(XEvent *e) {
 	static XWindowAttributes wa;
 	XMapRequestEvent *ev = &e->xmaprequest;
 
@@ -785,8 +749,7 @@ maprequest(XEvent *e)
 }
 
 void
-maximize(const Arg *arg)
-{
+maximize(const Arg *arg) {
 	Client *c = themon->sel;
 
 	if (!c || c->isfullscreen || c->isfixed)
@@ -795,8 +758,7 @@ maximize(const Arg *arg)
 }	
 
 void
-minimize(const Arg *arg)
-{
+minimize(const Arg *arg) {
 	Client *c = themon->sel;
 
 	if (!c || c->isfullscreen || c->isfixed)
@@ -805,8 +767,7 @@ minimize(const Arg *arg)
 }
 
 void
-movemouse(const Arg *arg)
-{
+movemouse(const Arg *arg) {
 	int x, y, ocx, ocy, nx, ny;
 	Client *c;
 	XEvent ev;
@@ -825,7 +786,8 @@ movemouse(const Arg *arg)
 	if (!getrootptr(&x, &y))
 		return;
 	do {
-		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
+		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask,
+			   &ev);
 		switch(ev.type) {
 		case ConfigureRequest:
 		case Expose:
@@ -856,8 +818,7 @@ movemouse(const Arg *arg)
 }
 
 void
-propertynotify(XEvent *e)
-{
+propertynotify(XEvent *e) {
 	Client *c;
 	XPropertyEvent *ev = &e->xproperty;
 
@@ -879,21 +840,18 @@ propertynotify(XEvent *e)
 }
 
 void
-quit(const Arg *arg)
-{
+quit(const Arg *arg) {
 	running = 0;
 }
 
 void
-resize(Client *c, int x, int y, int w, int h, int interact)
-{
+resize(Client *c, int x, int y, int w, int h, int interact) {
 	if (applysizehints(c, &x, &y, &w, &h, interact))
 		resizeclient(c, x, y, w, h);
 }
 
 void
-resizeclient(Client *c, int x, int y, int w, int h)
-{
+resizeclient(Client *c, int x, int y, int w, int h) {
 	XWindowChanges wc;
 
 	c->oldx = c->x; c->x = wc.x = x;
@@ -907,8 +865,7 @@ resizeclient(Client *c, int x, int y, int w, int h)
 }
 
 void
-resizemouse(const Arg *arg)
-{
+resizemouse(const Arg *arg) {
 	int ocx, ocy, nw, nh;
 	Client *c;
 	XEvent ev;
@@ -924,9 +881,11 @@ resizemouse(const Arg *arg)
 	if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
 		None, None, CurrentTime) != GrabSuccess)
 		return;
-	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1,
+		     c->h + c->bw - 1);
 	do {
-		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
+		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask,
+			   &ev);
 		switch(ev.type) {
 		case ConfigureRequest:
 		case Expose:
@@ -946,14 +905,14 @@ resizemouse(const Arg *arg)
 			break;
 		}
 	} while (ev.type != ButtonRelease);
-	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1,
+		     c->h + c->bw - 1);
 	XUngrabPointer(dpy, CurrentTime);
 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
 
 void
-restack(Monitor *m)
-{
+restack(Monitor *m) {
 	XEvent ev;
 
 	if (!m->sel)
@@ -965,10 +924,9 @@ restack(Monitor *m)
 }
 
 void
-run(void)
-{
+run(void) {
 	XEvent ev;
-	/* main event loop */
+
 	XSync(dpy, False);
 	while (running && !XNextEvent(dpy, &ev))
 		if (handler[ev.type])
@@ -976,8 +934,7 @@ run(void)
 }
 
 void
-scan(void)
-{
+scan(void) {
 	unsigned int i, num;
 	Window d1, d2, *wins = NULL;
 	XWindowAttributes wa;
@@ -985,16 +942,19 @@ scan(void)
 	if (XQueryTree(dpy, root, &d1, &d2, &wins, &num)) {
 		for (i = 0; i < num; i++) {
 			if (!XGetWindowAttributes(dpy, wins[i], &wa)
-			|| wa.override_redirect || XGetTransientForHint(dpy, wins[i], &d1))
+			    || wa.override_redirect
+			    || XGetTransientForHint(dpy, wins[i], &d1))
 				continue;
-			if (wa.map_state == IsViewable || getstate(wins[i]) == IconicState)
+			if (wa.map_state == IsViewable
+			    || getstate(wins[i]) == IconicState)
 				manage(wins[i], &wa);
 		}
 		for (i = 0; i < num; i++) { /* now the transients */
 			if (!XGetWindowAttributes(dpy, wins[i], &wa))
 				continue;
 			if (XGetTransientForHint(dpy, wins[i], &d1)
-			&& (wa.map_state == IsViewable || getstate(wins[i]) == IconicState))
+			    && (wa.map_state == IsViewable
+				|| getstate(wins[i]) == IconicState))
 				manage(wins[i], &wa);
 		}
 		if (wins)
@@ -1003,8 +963,7 @@ scan(void)
 }
 
 void
-setclientstate(Client *c, long state)
-{
+setclientstate(Client *c, long state) {
 	long data[] = { state, None };
 
 	XChangeProperty(dpy, c->win, wmatom[WMState], wmatom[WMState], 32,
@@ -1012,8 +971,7 @@ setclientstate(Client *c, long state)
 }
 
 int
-sendevent(Client *c, Atom proto)
-{
+sendevent(Client *c, Atom proto) {
 	int n;
 	Atom *protocols;
 	int exists = 0;
@@ -1037,8 +995,7 @@ sendevent(Client *c, Atom proto)
 }
 
 void
-setfocus(Client *c)
-{
+setfocus(Client *c) {
 	if (!c->neverfocus) {
 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
 		XChangeProperty(dpy, root, netatom[NetActiveWindow],
@@ -1049,11 +1006,10 @@ setfocus(Client *c)
 }
 
 void
-setfullscreen(Client *c, int fullscreen)
-{
+setfullscreen(Client *c, int fullscreen) {
 	if (fullscreen && !c->isfullscreen) {
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-			PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
+		    PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
 		c->isfullscreen = 1;
 		c->oldbw = c->bw;
 		c->bw = 0;
@@ -1061,7 +1017,7 @@ setfullscreen(Client *c, int fullscreen)
 		XRaiseWindow(dpy, c->win);
 	} else if (!fullscreen && c->isfullscreen){
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-			PropModeReplace, (unsigned char*)0, 0);
+		    PropModeReplace, (unsigned char*)0, 0);
 		c->isfullscreen = 0;
 		c->bw = c->oldbw;
 		c->x = c->oldx;
@@ -1074,8 +1030,7 @@ setfullscreen(Client *c, int fullscreen)
 }
 
 void
-setup(void)
-{
+setup(void) {
 	XSetWindowAttributes wa;
 	Atom utf8string;
 
@@ -1099,9 +1054,11 @@ setup(void)
 	netatom[NetWMName] = XInternAtom(dpy, "_NET_WM_NAME", False);
 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
 	netatom[NetWMCheck] = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
-	netatom[NetWMFullscreen] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	netatom[NetWMFullscreen] =
+	    XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
-	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
+	netatom[NetWMWindowTypeDialog] =
+	    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	/* init border colors */
 	clr_create(&focusbordercolor, col_focus);
@@ -1120,8 +1077,7 @@ setup(void)
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select events */
 	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask
-		|ButtonPressMask|EnterWindowMask|LeaveWindowMask
-		|StructureNotifyMask|PropertyChangeMask;
+		|ButtonPressMask|EnterWindowMask|StructureNotifyMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys();
@@ -1129,21 +1085,7 @@ setup(void)
 }
 
 void
-seturgent(Client *c, int urg)
-{
-	XWMHints *wmh;
-
-	c->isurgent = urg;
-	if (!(wmh = XGetWMHints(dpy, c->win)))
-		return;
-	wmh->flags = urg ? (wmh->flags | XUrgencyHint) : (wmh->flags & ~XUrgencyHint);
-	XSetWMHints(dpy, c->win, wmh);
-	XFree(wmh);
-}
-
-void
-showhide(Client *c)
-{
+showhide(Client *c) {
 	if (!c)
 		return;
 	if (ISVISIBLE(c)) {
@@ -1160,16 +1102,14 @@ showhide(Client *c)
 }
 
 void
-sigchld(int unused)
-{
+sigchld(int unused) {
 	if (signal(SIGCHLD, sigchld) == SIG_ERR)
 		die("can't install SIGCHLD handler:");
 	while (0 < waitpid(-1, NULL, WNOHANG));
 }
 
 void
-spawn(const Arg *arg)
-{
+spawn(const Arg *arg) {
 	if (fork() == 0) {
 		if (dpy)
 			close(ConnectionNumber(dpy));
@@ -1182,8 +1122,7 @@ spawn(const Arg *arg)
 }
 
 void
-tag(const Arg *arg)
-{
+tag(const Arg *arg) {
 	if (themon->sel && arg->ui & TAGMASK) {
 		themon->sel->tags = arg->ui & TAGMASK;
 		focus(NULL);
@@ -1192,8 +1131,7 @@ tag(const Arg *arg)
 }
 
 void
-unfocus(Client *c, int setfocus)
-{
+unfocus(Client *c, int setfocus) {
 	if (!c)
 		return;
 	grabbuttons(c, 0);
@@ -1205,8 +1143,7 @@ unfocus(Client *c, int setfocus)
 }
 
 void
-unmanage(Client *c, int destroyed)
-{
+unmanage(Client *c, int destroyed) {
 	XWindowChanges wc;
 
 	detach(c);
@@ -1230,8 +1167,7 @@ unmanage(Client *c, int destroyed)
 }
 
 void
-unmapnotify(XEvent *e)
-{
+unmapnotify(XEvent *e) {
 	Client *c;
 	XUnmapEvent *ev = &e->xunmap;
 
@@ -1244,8 +1180,7 @@ unmapnotify(XEvent *e)
 }
 
 void
-updateclientlist()
-{
+updateclientlist() {
 	Client *c;
 
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
@@ -1256,8 +1191,7 @@ updateclientlist()
 }
 
 void
-updatenumlockmask(void)
-{
+updatenumlockmask(void) {
 	unsigned int i, j;
 	XModifierKeymap *modmap;
 
@@ -1272,8 +1206,7 @@ updatenumlockmask(void)
 }
 
 void
-updatesizehints(Client *c)
-{
+updatesizehints(Client *c) {
 	long msize;
 	XSizeHints size;
 
@@ -1311,13 +1244,13 @@ updatesizehints(Client *c)
 		c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
 	} else
 		c->maxa = c->mina = 0.0;
-	c->isfixed = (c->maxw && c->maxh && c->maxw == c->minw && c->maxh == c->minh);
+	c->isfixed = (c->maxw && c->maxh && c->maxw == c->minw &&
+		      c->maxh == c->minh);
 	c->hintsvalid = 1;
 }
 
 void
-updatewindowtype(Client *c)
-{
+updatewindowtype(Client *c) {
 	Atom state = getatomprop(c, netatom[NetWMState]);
 
 	if (state == netatom[NetWMFullscreen])
@@ -1325,16 +1258,10 @@ updatewindowtype(Client *c)
 }
 
 void
-updatewmhints(Client *c)
-{
+updatewmhints(Client *c) {
 	XWMHints *wmh;
 
 	if ((wmh = XGetWMHints(dpy, c->win))) {
-		if (c == themon->sel && wmh->flags & XUrgencyHint) {
-			wmh->flags &= ~XUrgencyHint;
-			XSetWMHints(dpy, c->win, wmh);
-		} else
-			c->isurgent = (wmh->flags & XUrgencyHint) ? 1 : 0;
 		if (wmh->flags & InputHint)
 			c->neverfocus = !wmh->input;
 		else
@@ -1344,8 +1271,7 @@ updatewmhints(Client *c)
 }
 
 void
-view(const Arg *arg)
-{
+view(const Arg *arg) {
 	if ((arg->ui & TAGMASK) == themon->tagset[themon->seltags])
 		return;
 	themon->seltags ^= 1; /* toggle sel tagset */
@@ -1356,8 +1282,7 @@ view(const Arg *arg)
 }
 
 Client *
-wintoclient(Window w)
-{
+wintoclient(Window w) {
 	Client *c;
 
 	for (c = themon->clients; c; c = c->next)
@@ -1370,12 +1295,12 @@ wintoclient(Window w)
  * ignored (especially on UnmapNotify's). Other types of errors call Xlibs
  * default error handler, which may call exit. */
 int
-xerror(Display *dpy, XErrorEvent *ee)
-{
+xerror(Display *dpy, XErrorEvent *ee) {
 	if (ee->error_code == BadWindow
 	|| (ee->request_code == X_SetInputFocus && ee->error_code == BadMatch)
 	|| (ee->request_code == X_PolyText8 && ee->error_code == BadDrawable)
-	|| (ee->request_code == X_PolyFillRectangle && ee->error_code == BadDrawable)
+	|| (ee->request_code == X_PolyFillRectangle
+	    && ee->error_code == BadDrawable)
 	|| (ee->request_code == X_PolySegment && ee->error_code == BadDrawable)
 	|| (ee->request_code == X_ConfigureWindow && ee->error_code == BadMatch)
 	|| (ee->request_code == X_GrabButton && ee->error_code == BadAccess)
@@ -1388,23 +1313,20 @@ xerror(Display *dpy, XErrorEvent *ee)
 }
 
 int
-xerrordummy(Display *dpy, XErrorEvent *ee)
-{
+xerrordummy(Display *dpy, XErrorEvent *ee) {
 	return 0;
 }
 
 /* Startup Error handler to check if another window manager
  * is already running. */
 int
-xerrorstart(Display *dpy, XErrorEvent *ee)
-{
+xerrorstart(Display *dpy, XErrorEvent *ee) {
 	die("speck: another window manager is already running");
 	return -1;
 }
 
 int
-main(int argc, char *argv[])
-{
+main(int argc, char *argv[]) {
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("speck-"VERSION);
 	else if (argc != 1)
