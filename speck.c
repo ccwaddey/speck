@@ -64,7 +64,6 @@ struct Client {
 	int bw, oldbw; /* border width */
 	unsigned int tags;
 	int isfixed, neverfocus, isfullscreen;
-	Client *next;
 	Client *snext; /* stack next */
 	Window win;
 };
@@ -80,7 +79,6 @@ struct Monitor {
 	int mw, mh;   /* screen size */
 	unsigned int seltags;
 	unsigned int tagset[2]; /* There are two for toggling like Alt-Tab */
-	Client *clients;
 	Client *sel;
 	Client *stack;
 };
@@ -96,7 +94,6 @@ typedef struct {
 static void applyrules(Client *c);
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
 static void arrange(Monitor *m);
-static void attach(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void checkotherwm(void);
@@ -108,7 +105,6 @@ static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static Monitor *createmon(void);
 static void destroynotify(XEvent *e);
-static void detach(Client *c);
 static void detachstack(Client *c);
 static void focus(Client *c);
 static void focusin(XEvent *e);
@@ -289,12 +285,6 @@ arrange(Monitor *m) {
 }
 
 void
-attach(Client *c) {
-	c->next = themon->clients;
-	themon->clients = c;
-}
-
-void
 attachstack(Client *c) {
 	c->snext = themon->stack;
 	themon->stack = c;
@@ -471,14 +461,6 @@ destroynotify(XEvent *e) {
 }
 
 void
-detach(Client *c) {
-	Client **tc;
-
-	for (tc = &themon->clients; *tc && *tc != c; tc = &(*tc)->next);
-	*tc = c->next;
-}
-
-void
 detachstack(Client *c) {
 	Client **tc, *t;
 
@@ -526,15 +508,15 @@ focusstack(const Arg *arg) {
 	if (!themon->sel)
 		return;
 	if (arg->i > 0) {
-		for (c = themon->sel->next; c && !ISVISIBLE(c); c = c->next);
+		for (c = themon->sel->snext; c && !ISVISIBLE(c); c = c->snext);
 		if (!c)
-			for (c = themon->clients; c && !ISVISIBLE(c); c = c->next);
+			for (c = themon->stack; c && !ISVISIBLE(c); c = c->snext);
 	} else {
-		for (i = themon->clients; i != themon->sel; i = i->next)
+		for (i = themon->stack; i != themon->sel; i = i->snext)
 			if (ISVISIBLE(i))
 				c = i;
 		if (!c)
-			for (; i; i = i->next)
+			for (; i; i = i->snext)
 				if (ISVISIBLE(i))
 					c = i;
 	}
@@ -696,7 +678,6 @@ manage(Window w, XWindowAttributes *wa) {
 
 	XRaiseWindow(dpy, c->win);
 
-	attach(c);
 	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32,
 	    PropModeAppend, (unsigned char *) &(c->win), 1);
@@ -1123,7 +1104,6 @@ void
 unmanage(Client *c, int destroyed) {
 	XWindowChanges wc;
 
-	detach(c);
 	detachstack(c);
 	if (!destroyed) {
 		wc.border_width = c->oldbw;
@@ -1161,7 +1141,7 @@ updateclientlist() {
 	Client *c;
 
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
-	for (c = themon->clients; c; c = c->next)
+	for (c = themon->stack; c; c = c->snext)
 		XChangeProperty(dpy, root, netatom[NetClientList],
 				XA_WINDOW, 32, PropModeAppend,
 				(unsigned char *) &(c->win), 1);
@@ -1262,7 +1242,7 @@ Client *
 wintoclient(Window w) {
 	Client *c;
 
-	for (c = themon->clients; c; c = c->next)
+	for (c = themon->stack; c; c = c->snext)
 		if (c->win == w)
 			return c;
 	return NULL;
