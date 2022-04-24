@@ -22,8 +22,6 @@
 #define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & \
 				 (ShiftMask|ControlMask|Mod1Mask|Mod2Mask \
 				  |Mod3Mask|Mod4Mask|Mod5Mask))
-#define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->mw) - MAX((x),0)) \
-                               * MAX(0, MIN((y)+(h),(m)->mh) - MAX((y),0)))
 #define ISVISIBLE(C)            ((C->tags & themon->tagset[themon->seltags]))
 #define LENGTH(X)               (sizeof X / sizeof X[0])
 #define MOUSEMASK               (BUTTONMASK|PointerMotionMask)
@@ -447,7 +445,7 @@ createmon(void) {
 	m->mw = sw - xreserve;
 	m->mh = sh - yreserve;
 	m->tagset[0] = inittag;
-	m->tagset[1] = initalttag;
+	m->tagset[1] = altinittag;
 	return m;
 }
 

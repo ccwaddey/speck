@@ -9,7 +9,7 @@ static const int yreserve = 0, xreserve = 0;  /* screen space to reserve */
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", };
-static const unsigned int inittag = 1, initalttag = 2;
+static const unsigned int inittag = 1, altinittag = 2;
 
 static const Rule rules[] = {
 	/* xprop(1):
