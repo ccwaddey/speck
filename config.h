@@ -24,7 +24,7 @@ static const Rule rules[] = {
 #define MODKEY (ControlMask|ShiftMask)
 
 /* commands */
-static const char *termcmd[] = { "/home/me/bin/st", NULL };
+static const char *termcmd[] = { "st", NULL }; /* Edit at least this */
 
 static Key keys[] = {
   /* modifier(s)	key		function	argument */
