@@ -16,7 +16,7 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class	instance	title		tag (<= numtags) */
+	/* class	instance	title		tag (<=numtags,!=0) */
 	{ "st",		NULL,		NULL,		2,		},
 };
 

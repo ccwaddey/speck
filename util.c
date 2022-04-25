@@ -7,8 +7,7 @@
 #include "util.h"
 
 void *
-ecalloc(size_t nmemb, size_t size)
-{
+ecalloc(size_t nmemb, size_t size) {
 	void *p;
 
 	if (!(p = calloc(nmemb, size)))

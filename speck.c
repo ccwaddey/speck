@@ -89,8 +89,8 @@ typedef struct {
 
 /* function declarations */
 static void applyrules(Client *c);
-static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
-static void arrange(Monitor *m);
+static int applysizehints(Client *c, int *x, int *y, int *w, int *h);
+static void arrange(int dorestack);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void checkotherwm(void);
@@ -121,7 +121,7 @@ static void minimize(const Arg *arg);
 static void movemouse(const Arg *arg);
 static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
-static void resize(Client *c, int x, int y, int w, int h, int interact);
+static void resize(Client *c, int x, int y, int w, int h);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void restack(Monitor *m);
@@ -209,31 +209,20 @@ applyrules(Client *c) {
 }
 
 int
-applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact) {
+applysizehints(Client *c, int *x, int *y, int *w, int *h) {
 	int baseismin;
 
 	/* set minimum possible */
 	*w = MAX(1, *w);
 	*h = MAX(1, *h);
-	if (interact) {
-		if (*x > sw)
-			*x = sw - WIDTH(c);
-		if (*y > sh)
-			*y = sh - HEIGHT(c);
-		if (*x + *w + 2 * c->bw < 0)
-			*x = 0;
-		if (*y + *h + 2 * c->bw < 0)
-			*y = 0;
-	} else {
-		if (*x >= themon->mw)
-			*x = themon->mw - WIDTH(c);
-		if (*y >= themon->mh)
-			*y = themon->mh - HEIGHT(c);
-		if (*x + *w + 2 * c->bw <= 0)
-			*x = 0;
-		if (*y + *h + 2 * c->bw <= 0)
-			*y = 0;
-	}
+	if (*x >= themon->mw)
+		*x = themon->mw - WIDTH(c);
+	if (*y >= themon->mh)
+		*y = themon->mh - HEIGHT(c);
+	if (*x + *w + 2 * c->bw < 0)
+		*x = 0;
+	if (*y + *h + 2 * c->bw < 0)
+		*y = 0;
 
 	if (!c->hintsvalid)
 		updatesizehints(c);
@@ -271,10 +260,10 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact) {
 }
 
 void
-arrange(Monitor *m) {
+arrange(int dorestack) {
 	showhide(themon->stack);
-	if (m) {
-		restack(m);
+	if (dorestack) {
+		restack(themon);
 	}
 }
 
@@ -378,7 +367,7 @@ configure(Client *c) {
 void
 configurenotify(XEvent *e) {
 	focus(NULL);
-	arrange(NULL);
+	arrange(0);
 }
 
 void
@@ -569,7 +558,7 @@ grabbuttons(Client *c, int focused) {
 		unsigned int modifiers[] = { 0, LockMask, numlockmask,
 			numlockmask|LockMask };
 		XUngrabButton(dpy, AnyButton, AnyModifier, c->win);
-		if (!focused)
+		if (!focused)	/* This enables click to focus */
 			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
 				BUTTONMASK, GrabModeSync, GrabModeSync, None, None);
 		for (i = 0; i < LENGTH(buttons); i++)
@@ -680,7 +669,7 @@ manage(Window w, XWindowAttributes *wa) {
 	setclientstate(c, NormalState);
 	unfocus(themon->sel, 0);
 	themon->sel = c;
-	arrange(themon);
+	arrange(1);
 	XMapWindow(dpy, c->win);
 	focus(NULL);
 }
@@ -713,7 +702,7 @@ maximize(const Arg *arg) {
 
 	if (!c || c->isfullscreen || c->isfixed)
 		return;
-	resize(c, 0, 0, themon->mw - 2*c->bw, themon->mh - 2*c->bw, 0);
+	resize(c, 0, 0, themon->mw - 2*c->bw, themon->mh - 2*c->bw);
 }	
 
 void
@@ -722,7 +711,7 @@ minimize(const Arg *arg) {
 
 	if (!c || c->isfullscreen || c->isfixed)
 		return;
-	resize(c, c->oldx, c->oldy, c->oldw, c->oldh, 0);
+	resize(c, c->oldx, c->oldy, c->oldw, c->oldh);
 }
 
 void
@@ -768,7 +757,7 @@ movemouse(const Arg *arg) {
 			else if (abs(themon->mh - (ny + HEIGHT(c))) < snap)
 				ny = themon->mh - HEIGHT(c);
 			
-			resize(c, nx, ny, c->w, c->h, 1);
+			resize(c, nx, ny, c->w, c->h);
 			break;
 		}
 	} while (ev.type != ButtonRelease);
@@ -803,8 +792,8 @@ quit(const Arg *arg) {
 }
 
 void
-resize(Client *c, int x, int y, int w, int h, int interact) {
-	if (applysizehints(c, &x, &y, &w, &h, interact))
+resize(Client *c, int x, int y, int w, int h) {
+	if (applysizehints(c, &x, &y, &w, &h))
 		resizeclient(c, x, y, w, h);
 }
 
@@ -858,7 +847,7 @@ resizemouse(const Arg *arg) {
 			nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
 			if (nw >= 0 && nw <= themon->mw && nh >= 0 &&
 			    nh <= themon->mh)
-				resize(c, c->x, c->y, nw, nh, 1);
+				resize(c, c->x, c->y, nw, nh);
 			break;
 		}
 	} while (ev.type != ButtonRelease);
@@ -977,7 +966,7 @@ setfullscreen(Client *c, int fullscreen) {
 		c->w = c->oldw;
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
-		arrange(themon);
+		arrange(1);
 	}
 }
 
@@ -1029,7 +1018,7 @@ setup(void) {
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select events */
 	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask
-		|ButtonPressMask|StructureNotifyMask;
+		|ButtonPressMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys();
@@ -1044,7 +1033,7 @@ showhide(Client *c) {
 		/* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
 		if (!c->isfullscreen)
-			resize(c, c->x, c->y, c->w, c->h, 0);
+			resize(c, c->x, c->y, c->w, c->h);
 		showhide(c->snext);
 	} else {
 		/* hide clients bottom up */
@@ -1078,7 +1067,7 @@ tag(const Arg *arg) {
 	if (themon->sel && arg->ui && arg->ui <= numtags) {
 		themon->sel->tag = arg->ui;
 		focus(NULL);
-		arrange(themon);
+		arrange(1);
 	}
 }
 
@@ -1114,7 +1103,7 @@ unmanage(Client *c, int destroyed) {
 	free(c);
 	focus(NULL);
 	updateclientlist();
-	arrange(themon);
+	arrange(1);
 }
 
 void
@@ -1163,7 +1152,7 @@ updatesizehints(Client *c) {
 
 	if (!XGetWMNormalHints(dpy, c->win, &size, &msize))
 		/* size is uninitialized, ensure that size.flags aren't used */
-		size.flags = PSize;
+		size.flags = 0;
 	if (size.flags & PBaseSize) {
 		c->basew = size.base_width;
 		c->baseh = size.base_height;
@@ -1229,7 +1218,7 @@ view(const Arg *arg) {
 	if (arg->ui && arg->ui <= numtags)
 		themon->tagset[themon->seltag] = arg->ui;
 	focus(NULL);
-	arrange(themon);
+	arrange(1);
 }
 
 Client *
@@ -1288,7 +1277,6 @@ main(int argc, char *argv[]) {
 		die("speck: cannot open display");
 	checkotherwm();
 	setup();
-/* #if 0 */
 #ifdef __OpenBSD__
 	if (pledge("stdio rpath proc exec", NULL) == -1)
 		die("pledge");
