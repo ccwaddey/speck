@@ -8,7 +8,7 @@ static const char col_focus[]      = "#ce5c00";
 static const int yreserve = 0, xreserve = 0;  /* screen space to reserve */
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", };
+static const unsigned int numtags = 4;
 static const unsigned int inittag = 1, altinittag = 2;
 
 static const Rule rules[] = {
@@ -16,8 +16,8 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class	instance	title		tag-mask (power of 2) */
-	{ "st",		NULL,		NULL,		2,			},
+	/* class	instance	title		tag (<= numtags) */
+	{ "st",		NULL,		NULL,		2,		},
 };
 
 /* key definitions */
@@ -35,14 +35,14 @@ static Key keys[] = {
   { MODKEY,	 	XK_w,		killclient,     {0} },
   { MODKEY,	 	XK_comma,	minimize,	{0} },
   { MODKEY,	 	XK_period,	maximize,	{0} },
-  { MODKEY, 		XK_h,		view,           {.ui = 1 << 0} },
-  { MODKEY, 		XK_j,		view,           {.ui = 1 << 1} },
-  { MODKEY, 		XK_k,		view,           {.ui = 1 << 2} },
-  { MODKEY, 		XK_l,		view,           {.ui = 1 << 3} },
-  { MODKEY|Mod1Mask,	XK_h,		tag,		{.ui = 1 << 0} },
-  { MODKEY|Mod1Mask,	XK_j,		tag,		{.ui = 1 << 1} },
-  { MODKEY|Mod1Mask,	XK_k,		tag,		{.ui = 1 << 2} },
-  { MODKEY|Mod1Mask,	XK_l,		tag,		{.ui = 1 << 3} },
+  { MODKEY, 		XK_h,		view,           {.ui = 1 } },
+  { MODKEY, 		XK_j,		view,           {.ui = 2 } },
+  { MODKEY, 		XK_k,		view,           {.ui = 3 } },
+  { MODKEY, 		XK_l,		view,           {.ui = 4 } },
+  { MODKEY|Mod1Mask,	XK_h,		tag,		{.ui = 1 } },
+  { MODKEY|Mod1Mask,	XK_j,		tag,		{.ui = 2 } },
+  { MODKEY|Mod1Mask,	XK_k,		tag,		{.ui = 3 } },
+  { MODKEY|Mod1Mask,	XK_l,		tag,		{.ui = 4 } },
   { MODKEY, 		XK_q,		quit,           {0} },
 };
 
