@@ -13,7 +13,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
-#include <X11/Xft/Xft.h>
+#include <X11/Xutil.h>
 
 #include "util.h"
 
@@ -96,7 +96,6 @@ static void buttonpress(XEvent *e);
 static void checkotherwm(void);
 static void cleanup(void);
 static void clientmessage(XEvent *e);
-static void clr_create(XftColor *dest, const char *clrname);
 static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
@@ -174,7 +173,7 @@ static int running = 1;
 static Display *dpy;
 static Monitor *themon;
 static Window root, wmcheckwin;
-static XftColor focusbordercolor, unfocusbordercolor;
+static XColor focusbordercolor, unfocusbordercolor, dummy;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -306,10 +305,10 @@ checkotherwm(void) {
 
 void
 cleanup(void) {
-	Arg a = {.ui = ~0};
+	Client *c;
 
-	view(&a);
-
+	for (c = themon->stack; c != NULL; c = c->snext)
+		c->tag = themon->seltag;
 	while (themon->stack)
 		unmanage(themon->stack, 0);
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
@@ -318,16 +317,6 @@ cleanup(void) {
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 	XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
-}
-
-void
-clr_create(XftColor *dest, const char *clrname) {
-	if (!dest || !clrname)
-		return;
-	if (!XftColorAllocName(dpy, DefaultVisual(dpy, screen),
-	                       DefaultColormap(dpy, screen),
-	                       clrname, dest))
-		die("error, cannot allocate color '%s'", clrname);
 }
 
 void
@@ -655,8 +644,7 @@ manage(Window w, XWindowAttributes *wa) {
 	configure(c); /* propagates border_width, if size doesn't change */
 	updatewindowtype(c);
 	updatewmhints(c);
-	XSelectInput(dpy, w, FocusChangeMask|PropertyChangeMask
-		     |StructureNotifyMask);
+	XSelectInput(dpy, w, FocusChangeMask|PropertyChangeMask);
 	grabbuttons(c, 0);
 
 	XRaiseWindow(dpy, c->win);
@@ -1002,8 +990,10 @@ setup(void) {
 	    XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	/* init border colors */
-	clr_create(&focusbordercolor, col_focus);
-	clr_create(&unfocusbordercolor, col_unfocus);
+	XAllocNamedColor(dpy, DefaultColormap(dpy, screen), col_focus,
+		     &focusbordercolor, &dummy);
+	XAllocNamedColor(dpy, DefaultColormap(dpy, screen), col_unfocus,
+		     &unfocusbordercolor, &dummy);
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
@@ -1278,7 +1268,7 @@ main(int argc, char *argv[]) {
 	checkotherwm();
 	setup();
 #ifdef __OpenBSD__
-	if (pledge("stdio rpath proc exec", NULL) == -1)
+	if (pledge("stdio proc exec", NULL) == -1)
 		die("pledge");
 #endif /* __OpenBSD__ */
 	scan();
